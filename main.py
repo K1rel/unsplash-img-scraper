@@ -2,6 +2,9 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+import requests 
+import os
+
 import time
 
 def get_img_tags_for(term=None):
@@ -40,8 +43,27 @@ def filter_imgs(url: str, keywords: list) -> bool:
 def get_high_res(img_node):
     srcset = img_node.get_attribute("srcset")
     if srcset:
-        return [i.split(" ") for i in srcset.split(", ") if filter_imgs(i,['plus', 'profile', 'premium'])]
 
+        return [srcset.split(", ")[-1].split(" ")[0]] if filter_imgs(srcset.split(", ")[-1], ['plus', 'profile', 'premium']) else None
+
+        
+       
+
+
+
+def save_imgs(img_urls, dest_dir="images", tag=""):
+    for url in img_urls: 
+        response = requests.get(url)
+        file_name = url.split("?")[0].split("/")[-1]
+        
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
+
+
+        with open(f"{dest_dir}/{tag}{file_name}.jpeg","wb") as f:
+            f.write(response.content)
+        
+   
 
 
 if __name__ == "__main__":
@@ -49,10 +71,8 @@ if __name__ == "__main__":
     result = get_img_tags_for("ski mountains")
     high_res_images = []
 
-   
     imgs, driver = result["img_nodes"], result["driver"]
 
-    print("nodes:")
     for i, img_node in enumerate(imgs):
         if img_node is None:
             print(f"Image node {i} is None.")
@@ -63,9 +83,10 @@ if __name__ == "__main__":
                 high_res_images.append(urls)
         except Exception as e:
             print(f"Error processing img_node {i}: {e}")
-
-    highest_res_images = [urls[-1][0] for urls in high_res_images if urls]
-    [print(f"{i}: {imgs}") for i, imgs in enumerate(highest_res_images)]
+    
+    high_res_images = [url for sublist in high_res_images for url in sublist]
+    
+    save_imgs(high_res_images)
     driver.quit()
 
  
