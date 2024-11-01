@@ -4,8 +4,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 import requests 
 import os
-
+import logging
 import time
+
+logging.basicConfig(level=logging.DEBUG,
+                    format="%(asctime)s - %(levelname)s - %(message)s"
+                    )
 
 def get_img_tags_for(term=None):
     if term is None:
@@ -44,16 +48,13 @@ def get_high_res(img_node):
     srcset = img_node.get_attribute("srcset")
     if srcset:
 
-        return [srcset.split(", ")[-1].split(" ")[0]] if filter_imgs(srcset.split(", ")[-1], ['plus', 'profile', 'premium']) else None
-
-        
-       
-
-
+        return [srcset.split(", ")[-1].split(" ")[0]] if filter_imgs(srcset.split(", ")[-1], ['plus', 'profile', 'premium', 'avatar']) else None
 
 def save_imgs(img_urls, dest_dir="images", tag=""):
     for url in img_urls: 
         response = requests.get(url)
+        logging.info(f"Downloading {url}...")
+
         file_name = url.split("?")[0].split("/")[-1]
         
         if not os.path.exists(dest_dir):
@@ -62,13 +63,17 @@ def save_imgs(img_urls, dest_dir="images", tag=""):
 
         with open(f"{dest_dir}/{tag}{file_name}.jpeg","wb") as f:
             f.write(response.content)
+            logging.info(f"Saved {file_name}, with size {round(len(response.content)/1024/1024, 2)} MB.")
         
    
 
 
 if __name__ == "__main__":
    
-    result = get_img_tags_for("ski mountains")
+    search_term = "amsterdam"
+    destination_dir = "amsterdam images"
+
+    result = get_img_tags_for(search_term)
     high_res_images = []
 
     imgs, driver = result["img_nodes"], result["driver"]
@@ -86,7 +91,7 @@ if __name__ == "__main__":
     
     high_res_images = [url for sublist in high_res_images for url in sublist]
     
-    save_imgs(high_res_images)
+    save_imgs(high_res_images,destination_dir,search_term)
     driver.quit()
 
  
